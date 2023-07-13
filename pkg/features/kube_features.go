@@ -407,6 +407,14 @@ const (
 	// yet.
 	JobTrackingWithFinalizers featuregate.Feature = "JobTrackingWithFinalizers"
 
+	// owner: @haircommander
+	// kep: https://kep.k8s.io/3983
+	// alpha: v1.28
+	//
+	// Allows the kubelet to specify a "--config-dir" flag. All .conf files in the specified
+	// directory will be parsed into the kubelet configs upon startup, overwriting any defaults
+	KubeletDropInConfig featuregate.Feature = "KubeletDropInConfig"
+
 	// owner: @AkihiroSuda
 	// alpha: v1.22
 	//
@@ -963,6 +971,8 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	JobReadyPods: {Default: true, PreRelease: featuregate.Beta},
 
 	JobTrackingWithFinalizers: {Default: true, PreRelease: featuregate.GA, LockToDefault: true}, // remove in 1.28
+
+	KubeletDropInConfig: {Default: false, PreRelease: featuregate.Alpha},
 
 	KubeletInUserNamespace: {Default: false, PreRelease: featuregate.Alpha},
 

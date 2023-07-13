@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-systemd/v22/daemon"
+	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
@@ -214,6 +215,28 @@ is checked every 20 seconds (also configurable with a flag).`,
 				// update feature gates based on new config
 				if err := utilfeature.DefaultMutableFeatureGate.SetFromMap(kubeletConfig.FeatureGates); err != nil {
 					return fmt.Errorf("failed to set feature gates from initial flags-based config: %w", err)
+				}
+			}
+
+			// load additional dropins, if provided
+			if configDropinDir := kubeletFlags.KubeletDropinDir; len(configDropinDir) > 0 {
+				if !utilfeature.DefaultFeatureGate.Enabled(features.KubeletDropInConfig) {
+					return fmt.Errorf("flag %s specified but featuregate %s missing, cannot start kubelet", kubeletFlags.KubeletDropinDir, features.KubeletDropInConfig)
+				}
+				dropins, err := os.ReadDir(configDropinDir)
+				if err != nil {
+					return fmt.Errorf("failed to load kubelet dropin directory %s: %w", configDropinDir, err)
+				}
+				for _, f := range dropins {
+					// TODO make this a const
+					if !f.IsDir() && filepath.Ext(f.Name()) == ".conf" {
+						dropinConfig, err := loadConfigFile(filepath.Join(configDropinDir, f.Name()))
+						if err != nil {
+							return fmt.Errorf("failed to load kubelet dropin file, error: %w, path: %s", err, dropinConfig)
+						}
+						// TODO find a better way to merge this maybe?
+						mergo.Merge(kubeletConfig, dropinConfig, mergo.WithOverride)
+					}
 				}
 			}
 
